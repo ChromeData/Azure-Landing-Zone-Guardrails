@@ -1,0 +1,29 @@
+Test run: 2026-08-12 00:37:53
+Host: Windows 11, Python Python 3.14.0
+Command: python -m pytest tests/ -v
+============================================================
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\SnatchedYourChain\Downloads\pam-cloud-labs-extracted\pam-cloud-labs\10-azure-landing-zone-guardrails
+plugins: anyio-4.12.1, langsmith-0.7.10
+collecting ... collected 15 items
+
+tests/test_policies.py::test_there_are_policies PASSED                   [  6%]
+tests/test_policies.py::TestPolicyShape::test_is_valid_json[deny-owner-assignment.json] PASSED [ 13%]
+tests/test_policies.py::TestPolicyShape::test_is_valid_json[require-keyvault-protection.json] PASSED [ 20%]
+tests/test_policies.py::TestPolicyShape::test_has_properties_and_rule[deny-owner-assignment.json] PASSED [ 26%]
+tests/test_policies.py::TestPolicyShape::test_has_properties_and_rule[require-keyvault-protection.json] PASSED [ 33%]
+tests/test_policies.py::TestPolicyShape::test_effect_is_parameterised_and_valid[deny-owner-assignment.json] PASSED [ 40%]
+tests/test_policies.py::TestPolicyShape::test_effect_is_parameterised_and_valid[require-keyvault-protection.json] PASSED [ 46%]
+tests/test_policies.py::TestPolicyShape::test_default_effect_is_deny[deny-owner-assignment.json] PASSED [ 53%]
+tests/test_policies.py::TestPolicyShape::test_default_effect_is_deny[require-keyvault-protection.json] PASSED [ 60%]
+tests/test_policies.py::TestPolicyShape::test_then_references_effect_parameter[deny-owner-assignment.json] PASSED [ 66%]
+tests/test_policies.py::TestPolicyShape::test_then_references_effect_parameter[require-keyvault-protection.json] PASSED [ 73%]
+tests/test_policies.py::TestOwnerDenyPolicy::test_targets_the_real_owner_role_guid PASSED [ 80%]
+tests/test_policies.py::TestOwnerDenyPolicy::test_matches_role_assignments PASSED [ 86%]
+tests/test_policies.py::TestKeyVaultPolicy::test_checks_both_soft_delete_and_purge_protection PASSED [ 93%]
+tests/test_policies.py::TestKeyVaultPolicy::test_uses_anyof_so_either_missing_control_triggers PASSED [100%]
+
+============================= 15 passed in 0.03s ==============================
+

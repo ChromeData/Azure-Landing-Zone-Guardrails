@@ -1,0 +1,33 @@
+{
+  "//": "Custom Azure Policy: deny direct Owner role assignments at scope. Standing Owner is the single most common Azure privileged-access finding; PIM-eligible elevation should be used instead. Modeled on Azure/Community-Policy samples.",
+  "properties": {
+    "displayName": "Deny direct Owner role assignments",
+    "policyType": "Custom",
+    "mode": "All",
+    "description": "Blocks creation of Owner (8e3af657-a8ff-443c-a75c-2fe8c4bcb635) role assignments. Use PIM-eligible assignments for privileged access.",
+    "metadata": {
+      "category": "Security",
+      "version": "1.0.0"
+    },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "defaultValue": "Deny",
+        "allowedValues": ["Deny", "Audit", "Disabled"],
+        "metadata": { "displayName": "Effect" }
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          { "field": "type", "equals": "Microsoft.Authorization/roleAssignments" },
+          {
+            "field": "Microsoft.Authorization/roleAssignments/roleDefinitionId",
+            "equals": "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+          }
+        ]
+      },
+      "then": { "effect": "[parameters('effect')]" }
+    }
+  }
+}

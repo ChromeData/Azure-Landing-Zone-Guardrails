@@ -1,0 +1,110 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  policies:
+    name: Azure Policy validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - run: python -m pytest tests/ -v
+
+  bicep:
+    name: Bicep build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # az is preinstalled on the runner and ships a managed bicep - more robust
+      # than fetching the release binary, and it restores the remote AVM module.
+      - name: install bicep via az
+        run: az bicep install
+      - name: compile
+        run: az bicep build --file bicep/keyvault.bicep --outfile /dev/stdout
+
+  psrule:
+    name: PSRule for Azure
+    runs-on: ubuntu-latest
+    # Deliberately NOT checkov. Checkov's ARM framework cannot read AVM-based
+    # Bicep: scan the compiled module and it descends into nothing and reports
+    # zero checks as success, flatten it and it fails five rules that are all
+    # correctly configured, because the values are ARM expressions rather than
+    # literals. PSRule expands the template first, then evaluates. It caught a
+    # missing Key Vault audit diagnostic setting that checkov missed in both
+    # modes. See findings/bicep-scan-trap.txt.
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned standalone binary at a path we choose, rather than `az bicep
+      # install` and a guess at where it landed. The first version of this job
+      # guessed ~/.azure/bin/bicep, PSRule could not find it, and reported
+      # "Rules processed: 0". It failed loudly only because PSRule treats a
+      # missing Bicep CLI as an error rather than an empty pass, which is
+      # exactly the behaviour the other scanners in these labs lacked.
+      - name: install bicep
+        env:
+          BICEP_VERSION: "0.31.92"
+        run: |
+          set -euo pipefail
+          # RUNNER_TEMP, not /usr/local/bin: the runner user cannot chmod there.
+          curl -sSL --fail -o "$RUNNER_TEMP/bicep" \
+            "https://github.com/Azure/bicep/releases/download/v${BICEP_VERSION}/bicep-linux-x64"
+          chmod +x "$RUNNER_TEMP/bicep"
+          "$RUNNER_TEMP/bicep" --version
+          echo "PSRULE_AZURE_BICEP_PATH=$RUNNER_TEMP/bicep" >> "$GITHUB_ENV"
+
+      - name: analyze
+        uses: microsoft/ps-rule@v2.9.0
+        with:
+          modules: PSRule.Rules.Azure
+          # The .bicepparam, not the bicep/ directory.
+          #
+          # logAnalyticsWorkspaceId is required with no default, deliberately,
+          # because making it optional is how the missing audit setting got in.
+          # The consequence is that keyvault.bicep cannot be expanded as a
+          # standalone target: PSRule reports "The parameter named
+          # 'logAnalyticsWorkspaceId' was not set or a defaultValue was
+          # defined" and fails the run, even though the .bicepparam target in
+          # the same directory passed 36 rules cleanly.
+          #
+          # PSRule still reads keyvault.bicep through the `using` statement, so
+          # the template is fully analysed. Excluding the .bicep via
+          # input.pathIgnore instead was tried and processed zero rules, which
+          # would have been a green job that checked nothing.
+          inputPath: bicep/keyvault.bicepparam
+          option: ps-rule.yaml
+          outputFormat: Markdown
+          outputPath: psrule-results.md
+
+      - name: fail if PSRule evaluated nothing
+        shell: pwsh
+        # PSRule reports "Rules processed: 0" and exits clean when it cannot
+        # expand the Bicep, and a zero-rule run is a green job that checked
+        # nothing. Both earlier versions of this workflow did exactly that:
+        # once because it could not find the bicep binary, once because an
+        # input.pathIgnore entry excluded the only target.
+        #
+        # 36 rules is what a working run produces. The floor is deliberately
+        # well below that so adding rules does not break the build, but well
+        # above zero so an empty run cannot pass.
+        run: |
+          $env:PSRULE_AZURE_BICEP_PATH = "$env:RUNNER_TEMP/bicep"
+          $env:PSRULE_AZURE_BICEP_FILE_EXPANSION = 'true'
+          Install-Module PSRule.Rules.Azure -Force -SkipPublisherCheck -Scope CurrentUser
+          $r = Invoke-PSRule -InputPath ./bicep/keyvault.bicepparam `
+                             -Module PSRule.Rules.Azure `
+                             -Option ./ps-rule.yaml -Outcome All -WarningAction SilentlyContinue
+          $evaluated = @($r | Where-Object { $_.Outcome -in 'Pass', 'Fail' }).Count
+          Write-Host "rules evaluated: $evaluated"
+          if ($evaluated -lt 10) {
+            Write-Host "::error::PSRule evaluated $evaluated rules. A near-zero run means the template was never expanded, not that it is clean."
+            exit 1
+          }
