@@ -1,37 +1,69 @@
-# Lab Notes — Azure Landing-Zone Guardrails
+# Lab Notes — 10 Azure Landing-Zone Guardrails
 
-> Running log, newest first.
+Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
-## Known traps (pre-seeded)
+---
 
-### Policy evaluation is not instant
+## Format
 
-A newly assigned policy can take several minutes to enforce. If `test-deny`
-unexpectedly *succeeds* right after `assign`, wait and retry before concluding the
-policy is wrong — enforcement lag is real.
+```
+### YYYY-MM-DD — what I was trying to do
 
-### Deny vs. the existing state
+**Expected:**
+**Got:**
+**Cause:**
+**Fix:**
+```
 
-Deny policies block new/changed resources; they don't remove existing
-non-compliant ones. If you already have a standing Owner assignment, the policy
-won't retroactively kill it — it stops the next one. Note this distinction.
+---
 
-### AVM module versions move
+## Design decisions
 
-`avm/res/key-vault/vault:0.9.0` is pinned. AVM modules version frequently; check
-the registry for the current tag and record which you used.
+### Effect as a parameter, defaulting to Deny
 
-### RBAC vs. access policies
+Org-wide policy is dangerous to roll out at full Deny on day one — you find out
+what it blocks by breaking people's deploys. The effect is a parameter so it can
+go out as Audit, get reviewed, then flip to Deny. Default is Deny because the
+committed intent is a guardrail, not a suggestion.
 
-The vault uses `enableRbacAuthorization: true`. If you're used to Key Vault access
-policies, RBAC is a different model — worth a paragraph comparing the two from a
-least-privilege standpoint.
+### The Owner GUID is the silent-failure risk
 
-## YYYY-MM-DD — <first real entry>
+`8e3af657-a8ff-443c-a75c-2fe8c4bcb635` is the built-in Owner role. Get it wrong
+and the policy deploys, shows as assigned, and blocks nothing. A test asserts the
+real GUID is present — this is the single most important check in the repo.
 
-**Goal:** · **What happened:** · **Why:** · **Fix:** · **Time lost:**
+### anyOf on the Key Vault policy
+
+A vault missing EITHER soft-delete OR purge protection must be denied, not only
+one missing both. Used `anyOf`. A test pins it, because `allOf` there would be a
+subtle hole that only bites on a partially-configured vault.
+
+---
+
+## Known traps (confirm on assignment)
+
+- **Deny policies don't retro-fix.** Assigning the Owner-deny policy does not
+  remove existing Owner assignments — it only blocks new ones. Existing standing
+  Owners need a separate cleanup. Note this or someone assumes the subscription
+  is clean when it isn't.
+- **roleAssignments policy scope.** Confirm the policy evaluates at the scope you
+  assign it — a management-group assignment behaves differently from a
+  subscription one.
+- **AVM module version pin.** `avm/res/key-vault/vault:0.9.0` — confirm it still
+  resolves; AVM versions move.
+
+---
 
 ## Open questions
-- [ ] Does the Owner-deny policy also catch User Access Administrator (the other
-      escalation route)?
-- [ ] How long is enforcement lag in practice on a fresh assignment?
+
+- [ ] In Audit mode, how many existing Owner assignments does the policy flag?
+- [ ] Does the Key Vault deny correctly block a vault created without purge
+      protection? (Deploy one and confirm the deny fires.)
+- [ ] Does the compliant Bicep vault deploy cleanly under the deny policy?
+- [ ] Capture the policy compliance state for findings/.
+
+---
+
+## Log
+
+_(first entry goes here on the first assignment)_
