@@ -1,4 +1,4 @@
-# Lab Notes — 10 Azure Landing-Zone Guardrails
+# Lab Notes, 10 Azure Landing-Zone Guardrails
 
 Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
@@ -7,7 +7,7 @@ Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 ## Format
 
 ```
-### YYYY-MM-DD — what I was trying to do
+### YYYY-MM-DD, what I was trying to do
 
 **Expected:**
 **Got:**
@@ -21,7 +21,7 @@ Running log. Errors, dead ends, fixes, surprises. Dated, newest at the bottom.
 
 ### Effect as a parameter, defaulting to Deny
 
-Org-wide policy is dangerous to roll out at full Deny on day one — you find out
+Org-wide policy is dangerous to roll out at full Deny on day one, you find out
 what it blocks by breaking people's deploys. The effect is a parameter so it can
 go out as Audit, get reviewed, then flip to Deny. Default is Deny because the
 committed intent is a guardrail, not a suggestion.
@@ -30,7 +30,7 @@ committed intent is a guardrail, not a suggestion.
 
 `8e3af657-a8ff-443c-a75c-2fe8c4bcb635` is the built-in Owner role. Get it wrong
 and the policy deploys, shows as assigned, and blocks nothing. A test asserts the
-real GUID is present — this is the single most important check in the repo.
+real GUID is present, this is the single most important check in the repo.
 
 ### anyOf on the Key Vault policy
 
@@ -43,13 +43,13 @@ subtle hole that only bites on a partially-configured vault.
 ## Known traps (confirm on assignment)
 
 - **Deny policies don't retro-fix.** Assigning the Owner-deny policy does not
-  remove existing Owner assignments — it only blocks new ones. Existing standing
+  remove existing Owner assignments, it only blocks new ones. Existing standing
   Owners need a separate cleanup. Note this or someone assumes the subscription
   is clean when it isn't.
 - **roleAssignments policy scope.** Confirm the policy evaluates at the scope you
-  assign it — a management-group assignment behaves differently from a
+  assign it, a management-group assignment behaves differently from a
   subscription one.
-- **AVM module version pin.** `avm/res/key-vault/vault:0.9.0` — confirm it still
+- **AVM module version pin.** `avm/res/key-vault/vault:0.9.0`, confirm it still
   resolves; AVM versions move.
 
 ---
@@ -66,7 +66,7 @@ subtle hole that only bites on a partially-configured vault.
 
 ## Log
 
-### 2026-08-12 — writing the tests found the risk worth testing for
+### 2026-08-12, writing the tests found the risk worth testing for
 
 Wrote the policy validator expecting it to be a formality. Writing
 `test_targets_the_real_owner_role_guid` is what made the actual failure mode obvious:
@@ -88,7 +88,7 @@ Final run: **15 passed** (`findings/test-run.txt`).
 
 ---
 
-### 2026-08-12 — Bicep build failed in CI
+### 2026-08-12, Bicep build failed in CI
 
 **Expected:** the release binary to download and compile the template.
 

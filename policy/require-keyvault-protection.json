@@ -1,5 +1,5 @@
 {
-  "//": "Custom Azure Policy: deny Key Vaults without soft-delete + purge protection. A vault that can be purged is a vault whose secrets can be destroyed to cover tracks — directly a PAM concern.",
+  "//": "Custom Azure Policy: deny Key Vaults without soft-delete + purge protection. A vault that can be purged is a vault whose secrets can be destroyed to cover tracks, directly a PAM concern.",
   "properties": {
     "displayName": "Key Vaults must have purge protection and soft delete",
     "policyType": "Custom",

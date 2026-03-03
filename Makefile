@@ -20,8 +20,8 @@ assign: ## Assign the guardrails at subscription scope
 		--scope "/subscriptions/$(SUB)" \
 		--policy lab10-kv-protection
 
-test-deny: ## Attempt a direct Owner assignment — expect it to be DENIED
-	@echo "This SHOULD fail with RequestDisallowedByPolicy — that is success."
+test-deny: ## Attempt a direct Owner assignment, expect it to be DENIED
+	@echo "This SHOULD fail with RequestDisallowedByPolicy, that is success."
 	-az role assignment create --role Owner \
 		--assignee "$$(az ad signed-in-user show --query id -o tsv)" \
 		--scope "/subscriptions/$(SUB)"
