@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: install bicep
-        run: |
-          curl -sSLo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
-          chmod +x bicep && sudo mv bicep /usr/local/bin/bicep
+      # az is preinstalled on the runner and ships a managed bicep - more robust
+      # than fetching the release binary, and it restores the remote AVM module.
+      - name: install bicep via az
+        run: az bicep install
       - name: compile
-        run: bicep build bicep/keyvault.bicep --stdout
+        run: az bicep build --file bicep/keyvault.bicep --outfile /dev/stdout
