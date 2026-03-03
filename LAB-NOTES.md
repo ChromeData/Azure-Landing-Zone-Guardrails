@@ -66,4 +66,36 @@ subtle hole that only bites on a partially-configured vault.
 
 ## Log
 
-_(first entry goes here on the first assignment)_
+### 2026-08-12 — writing the tests found the risk worth testing for
+
+Wrote the policy validator expecting it to be a formality. Writing
+`test_targets_the_real_owner_role_guid` is what made the actual failure mode obvious:
+
+A policy with the wrong role GUID **deploys successfully**, shows as Assigned in the
+portal, reports compliant, and blocks nothing. There is no error anywhere. You would
+only discover it the day someone assigns themselves Owner and the guardrail you were
+relying on says nothing.
+
+So the single most valuable test in this repo is a string check that
+`8e3af657-a8ff-443c-a75c-2fe8c4bcb635` appears in the deny policy. Trivial test,
+silent-failure class of bug.
+
+Same reasoning drove the `anyOf` test on the Key Vault policy: `allOf` there would
+only deny a vault missing *both* soft-delete and purge protection, silently permitting
+one missing just one. Another passes-review, protects-nothing bug.
+
+Final run: **15 passed** (`findings/test-run.txt`).
+
+---
+
+### 2026-08-12 — Bicep build failed in CI
+
+**Expected:** the release binary to download and compile the template.
+
+**Got:** `##[error]Process completed with exit code 23` on the install step.
+
+**Cause:** exit 23 is a curl write error fetching the `latest` release URL.
+
+**Fix:** Switched to `az bicep install` / `az bicep build`. The Azure CLI is
+preinstalled on the runner and manages its own Bicep, so there's no download step to
+fail, and it handles the remote AVM module restore.

@@ -9,7 +9,7 @@
 | **Domains** | Azure, CyberArk/Idira (identity governance) |
 | **Built on** | [Azure/azure-policy](https://github.com/Azure/azure-policy) + [Community-Policy](https://github.com/Azure/Community-Policy), [Azure Verified Modules](https://github.com/Azure/Azure-Verified-Modules) |
 | **Cost** | ~$1. **Runtime** ~4 hours |
-| **Status** | Built, policies tested, not yet assigned |
+| **Status** | Built and verified. Policies tested (15 passing, output in findings/). Not yet assigned |
 
 ## Situation
 
