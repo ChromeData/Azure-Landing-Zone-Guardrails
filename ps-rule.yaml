@@ -1,0 +1,39 @@
+# PSRule for Azure, the scanner that can actually read this lab's Bicep.
+#
+# Why this file exists rather than a checkov invocation:
+#
+# Checkov's ARM framework cannot evaluate AVM-based Bicep. Point it at the
+# compiled template and it walks a single Microsoft.Resources/deployments
+# resource, descends into nothing, and reports zero checks as success. Flatten
+# the nested resources and it fails five Key Vault rules that are all correctly
+# configured, because the compiled values are ARM expressions like
+# "[parameters('enableSoftDelete')]" and it compares them against a literal
+# true. Both numbers are wrong, in opposite directions. See
+# findings/bicep-scan-trap.txt.
+#
+# PSRule expands the template first, resolving parameters and ARM functions,
+# and only then evaluates rules. That is the difference that matters, and it is
+# why Microsoft ships PSRule as the Bicep and AVM story.
+#
+# Runs entirely offline. No Azure subscription, no login.
+#
+#   Install-Module PSRule.Rules.Azure -Scope CurrentUser
+#   Invoke-PSRule -InputPath ./bicep/ -Module PSRule.Rules.Azure
+
+configuration:
+  # Without this, PSRule skips .bicep files entirely and reports
+  # "no matching rules were found", which reads like a pass and is not one.
+  AZURE_BICEP_FILE_EXPANSION: true
+
+  # AVM modules pull from the public registry, so restore needs a moment.
+  AZURE_BICEP_FILE_EXPANSION_TIMEOUT: 30
+
+input:
+  pathIgnore:
+    - "**/*.md"
+    - "findings/"
+    - "tests/"
+
+output:
+  culture:
+    - "en-US"

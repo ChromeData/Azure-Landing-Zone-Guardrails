@@ -29,3 +29,31 @@ jobs:
         run: az bicep install
       - name: compile
         run: az bicep build --file bicep/keyvault.bicep --outfile /dev/stdout
+
+  psrule:
+    name: PSRule for Azure
+    runs-on: ubuntu-latest
+    # Deliberately NOT checkov. Checkov's ARM framework cannot read AVM-based
+    # Bicep: scan the compiled module and it descends into nothing and reports
+    # zero checks as success, flatten it and it fails five rules that are all
+    # correctly configured, because the values are ARM expressions rather than
+    # literals. PSRule expands the template first, then evaluates. It caught a
+    # missing Key Vault audit diagnostic setting that checkov missed in both
+    # modes. See findings/bicep-scan-trap.txt.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install bicep via az
+        run: az bicep install
+
+      - name: point PSRule at the az-managed bicep
+        run: echo "PSRULE_AZURE_BICEP_PATH=$HOME/.azure/bin/bicep" >> "$GITHUB_ENV"
+
+      - name: analyze
+        uses: microsoft/ps-rule@v2.9.0
+        with:
+          modules: PSRule.Rules.Azure
+          inputPath: bicep/
+          option: ps-rule.yaml
+          outputFormat: Markdown
+          outputPath: psrule-results.md

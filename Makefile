@@ -1,10 +1,15 @@
-.PHONY: help policy assign test-deny deploy-good report destroy
+.PHONY: help policy assign test-deny deploy-good report destroy scan
 .DEFAULT_GOAL := help
 SUB := $(shell az account show --query id -o tsv 2>/dev/null)
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+scan: ## Offline security scan of the Bicep (no Azure subscription needed)
+	@# PSRule expands the template before evaluating, which is why it can read
+	@# AVM modules. checkov cannot. See findings/bicep-scan-trap.txt.
+	pwsh -c "Install-Module PSRule.Rules.Azure -Scope CurrentUser -Force -SkipPublisherCheck; 	  Invoke-PSRule -InputPath ./bicep/ -Module PSRule.Rules.Azure -Option ./ps-rule.yaml -Outcome Fail"
 
 policy: ## Create the custom policy definitions
 	az policy definition create --name lab10-deny-owner \
