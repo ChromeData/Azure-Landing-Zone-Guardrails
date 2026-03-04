@@ -54,11 +54,12 @@ jobs:
           BICEP_VERSION: "0.31.92"
         run: |
           set -euo pipefail
-          curl -sSL --fail -o /usr/local/bin/bicep \
+          # RUNNER_TEMP, not /usr/local/bin: the runner user cannot chmod there.
+          curl -sSL --fail -o "$RUNNER_TEMP/bicep" \
             "https://github.com/Azure/bicep/releases/download/v${BICEP_VERSION}/bicep-linux-x64"
-          chmod +x /usr/local/bin/bicep
-          bicep --version
-          echo "PSRULE_AZURE_BICEP_PATH=/usr/local/bin/bicep" >> "$GITHUB_ENV"
+          chmod +x "$RUNNER_TEMP/bicep"
+          "$RUNNER_TEMP/bicep" --version
+          echo "PSRULE_AZURE_BICEP_PATH=$RUNNER_TEMP/bicep" >> "$GITHUB_ENV"
 
       - name: analyze
         uses: microsoft/ps-rule@v2.9.0
