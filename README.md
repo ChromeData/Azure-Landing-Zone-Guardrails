@@ -50,7 +50,7 @@ Needs Python 3, and the Azure CLI plus a subscription for the deploy steps.
 
 ## Findings
 
-`findings/` fills in once assigned. [LAB-NOTES.md](./LAB-NOTES.md) is the log.
+[`findings/`](./findings/) holds the scan trap: why checkov reads AVM Bicep as either zero checks or five false positives, and how PSRule caught the missing Key Vault audit setting. [LAB-NOTES.md](./LAB-NOTES.md) is the log.
 
 ## License
 
