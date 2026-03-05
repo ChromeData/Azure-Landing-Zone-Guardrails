@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="712" height="246" viewBox="0 0 712 246" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">
+<rect width="712" height="246" rx="8" fill="#0d1117" stroke="#30363d"/>
+<rect width="712" height="34" rx="8" fill="#161b22"/>
+<rect y="26" width="712" height="8" fill="#161b22"/>
+<circle cx="18" cy="17" r="5" fill="#ff5f56"/>
+<circle cx="36" cy="17" r="5" fill="#ffbd2e"/>
+<circle cx="54" cy="17" r="5" fill="#27c93f"/>
+<text x="72" y="22" fill="#8b949e">PSRule reads AVM Bicep that checkov cannot</text>
+<text x="16" y="54" fill="#7ee787">$</text><text x="33" y="54" fill="#c9d1d9">Invoke-PSRule -InputPath ./bicep/keyvault.bicepparam</text>
+<text x="16" y="94" fill="#c9d1d9" xml:space="preserve">PSRule.Rules.Azure evaluated the compiled Key Vault Bicep:</text>
+<text x="16" y="114" fill="#c9d1d9" xml:space="preserve">  target resolved: lab10kv... (uniqueString evaluated, not left as an expression)</text>
+<text x="16" y="134" fill="#c9d1d9" xml:space="preserve">  rules passed: 36</text>
+<text x="16" y="154" fill="#f85149" font-weight="600" xml:space="preserve">  rules failed: 0</text>
+<text x="16" y="174" fill="#c9d1d9" xml:space="preserve">  checkov on the same file: 0 checks (nested deployment) OR 5 false</text>
+<text x="16" y="194" fill="#c9d1d9" xml:space="preserve">  positives (ARM expressions vs literals). PSRule expands first, so it</text>
+<text x="16" y="214" fill="#c9d1d9" xml:space="preserve">  reads the real values and caught the missing Key Vault audit setting.</text>
+</svg>

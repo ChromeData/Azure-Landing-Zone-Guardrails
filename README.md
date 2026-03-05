@@ -1,5 +1,8 @@
 # Lab 10: Azure Landing Zone Privileged Access Guardrails
 
+<p align="center"><img src="assets/psrule-scan.svg" alt="PSRule reads AVM Bicep that checkov cannot" width="720"></p>
+
+
 [![tests](https://github.com/ChromeData/Azure-Landing-Zone-Guardrails/actions/workflows/tests.yml/badge.svg)](https://github.com/ChromeData/Azure-Landing-Zone-Guardrails/actions/workflows/tests.yml)
 
 **Rules that physically block the two most common Azure privilege mistakes: standing Owner assignments, and Key Vaults that can be wiped. Prevention at subscription scope, not a report after the fact.**
