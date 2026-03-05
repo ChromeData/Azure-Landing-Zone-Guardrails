@@ -162,3 +162,16 @@ subscription. Full detail in `findings/bicep-scan-trap.txt`.
 The deny path still needs real Azure. That part has not moved.
 
 ---
+
+### 2026-08-12, CI now fails when PSRule evaluates nothing
+
+Two earlier versions of this workflow shipped `Rules processed: 0` as a green
+job: once because PSRule could not find the bicep binary, once because an
+`input.pathIgnore` entry excluded the only target. Both looked exactly like a
+clean scan.
+
+Added a step that counts evaluated rules and fails below a floor of 10. A
+working run produces 36, so the floor is well clear of normal variation and well
+clear of zero. A scan that examines nothing can no longer report success.
+
+---
