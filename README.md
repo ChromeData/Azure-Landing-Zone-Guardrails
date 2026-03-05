@@ -30,7 +30,9 @@ Both ship with the effect as a parameter defaulting to Deny, so you can roll the
 
 ## Result
 
-A policy with a bad rule or the wrong role ID deploys fine and protects nothing, the worst kind of failure. 15 offline tests ([tests/test_policies.py](./tests/test_policies.py)) check every definition: valid JSON, well formed rule, parameterised effect that defaults to Deny, the Owner deny policy references the real Owner role ID, and the Key Vault policy denies a vault missing either control. CI runs those tests and compiles the Bicep.
+**The guardrails work, and building the verification caught the Key Vault guardrail letting a real gap through.** The hardened vault was locked against access but kept no record of *who* accessed it — no audit diagnostic setting. I only found it because I did the scanning right: checkov cannot read AVM-based Bicep (it reports either zero checks or five false positives on ARM expressions it can't evaluate), so I wired up PSRule for Azure, which expands the template first and reads the real values. It flagged the missing audit logging; I fixed it; 36 rules pass, 0 fail. That whole trap is written up because "our scanner is green" meant nothing until the scanner could actually read the file.
+
+15 offline tests check every policy definition — valid JSON, well-formed rule, effect defaulting to Deny, the Owner-deny policy referencing the real Owner role ID, the Key Vault policy denying a vault missing either control — because a policy with a bad rule or wrong role ID deploys fine and protects nothing. CI runs those, compiles the Bicep, and fails if PSRule evaluates near-zero rules (a scan that reads nothing must not pass green).
 
 [bicep/keyvault.bicep](./bicep/keyvault.bicep) deploys a correctly hardened Key Vault through the Azure Verified Module. It proves the guardrail passes a resource that is actually compliant, not just that it blocks bad ones.
 
