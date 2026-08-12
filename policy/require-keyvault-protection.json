@@ -1,0 +1,31 @@
+{
+  "//": "Custom Azure Policy: deny Key Vaults without soft-delete + purge protection. A vault that can be purged is a vault whose secrets can be destroyed to cover tracks — directly a PAM concern.",
+  "properties": {
+    "displayName": "Key Vaults must have purge protection and soft delete",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Denies Key Vault creation/update unless soft delete and purge protection are enabled.",
+    "metadata": { "category": "Key Vault", "version": "1.0.0" },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "defaultValue": "Deny",
+        "allowedValues": ["Deny", "Audit", "Disabled"]
+      }
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          { "field": "type", "equals": "Microsoft.KeyVault/vaults" },
+          {
+            "anyOf": [
+              { "field": "Microsoft.KeyVault/vaults/enableSoftDelete", "notEquals": "true" },
+              { "field": "Microsoft.KeyVault/vaults/enablePurgeProtection", "notEquals": "true" }
+            ]
+          }
+        ]
+      },
+      "then": { "effect": "[parameters('effect')]" }
+    }
+  }
+}
