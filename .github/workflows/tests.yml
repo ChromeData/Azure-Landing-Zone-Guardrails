@@ -43,11 +43,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install bicep via az
-        run: az bicep install
-
-      - name: point PSRule at the az-managed bicep
-        run: echo "PSRULE_AZURE_BICEP_PATH=$HOME/.azure/bin/bicep" >> "$GITHUB_ENV"
+      # Pinned standalone binary at a path we choose, rather than `az bicep
+      # install` and a guess at where it landed. The first version of this job
+      # guessed ~/.azure/bin/bicep, PSRule could not find it, and reported
+      # "Rules processed: 0". It failed loudly only because PSRule treats a
+      # missing Bicep CLI as an error rather than an empty pass, which is
+      # exactly the behaviour the other scanners in these labs lacked.
+      - name: install bicep
+        env:
+          BICEP_VERSION: "0.31.92"
+        run: |
+          set -euo pipefail
+          curl -sSL --fail -o /usr/local/bin/bicep \
+            "https://github.com/Azure/bicep/releases/download/v${BICEP_VERSION}/bicep-linux-x64"
+          chmod +x /usr/local/bin/bicep
+          bicep --version
+          echo "PSRULE_AZURE_BICEP_PATH=/usr/local/bin/bicep" >> "$GITHUB_ENV"
 
       - name: analyze
         uses: microsoft/ps-rule@v2.9.0
