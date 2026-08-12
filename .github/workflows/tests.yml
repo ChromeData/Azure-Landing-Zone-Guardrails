@@ -83,3 +83,28 @@ jobs:
           option: ps-rule.yaml
           outputFormat: Markdown
           outputPath: psrule-results.md
+
+      - name: fail if PSRule evaluated nothing
+        shell: pwsh
+        # PSRule reports "Rules processed: 0" and exits clean when it cannot
+        # expand the Bicep, and a zero-rule run is a green job that checked
+        # nothing. Both earlier versions of this workflow did exactly that:
+        # once because it could not find the bicep binary, once because an
+        # input.pathIgnore entry excluded the only target.
+        #
+        # 36 rules is what a working run produces. The floor is deliberately
+        # well below that so adding rules does not break the build, but well
+        # above zero so an empty run cannot pass.
+        run: |
+          $env:PSRULE_AZURE_BICEP_PATH = "$env:RUNNER_TEMP/bicep"
+          $env:PSRULE_AZURE_BICEP_FILE_EXPANSION = 'true'
+          Install-Module PSRule.Rules.Azure -Force -SkipPublisherCheck -Scope CurrentUser
+          $r = Invoke-PSRule -InputPath ./bicep/keyvault.bicepparam `
+                             -Module PSRule.Rules.Azure `
+                             -Option ./ps-rule.yaml -Outcome All -WarningAction SilentlyContinue
+          $evaluated = @($r | Where-Object { $_.Outcome -in 'Pass', 'Fail' }).Count
+          Write-Host "rules evaluated: $evaluated"
+          if ($evaluated -lt 10) {
+            Write-Host "::error::PSRule evaluated $evaluated rules. A near-zero run means the template was never expanded, not that it is clean."
+            exit 1
+          }
