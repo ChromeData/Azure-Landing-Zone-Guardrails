@@ -1,0 +1,126 @@
+Scanning AVM-based Bicep, and why both answers are wrong
+Date: 2026-08-12
+Tools: bicep 0.31.92, checkov 3.3.10
+No Azure subscription involved. Everything below runs offline.
+======================================================================
+
+WHAT RAN
+
+  bicep build bicep/keyvault.bicep --outfile kv.json     -> exit 0
+
+  That is a real check on its own. It resolved
+  br/public:avm/res/key-vault/vault:0.9.0 from Microsoft's public registry
+  and inlined it into 156 KB of ARM. A wrong module version or a misspelled
+  parameter name fails here.
+
+  Then checkov, twice, on the same Key Vault.
+
+RESULT 1, SCANNING THE COMPILED TEMPLATE
+
+  checkov -f kv.json --framework arm
+
+  Zero checks. Not zero failures, zero checks evaluated. Exit code clean.
+
+  Cause: a Bicep module compiles to a single top-level
+  Microsoft.Resources/deployments resource, with the real resources nested
+  under properties.template.resources. Checkov's ARM parser does not descend
+  into nested deployments, so it walks a template containing one resource it
+  has no rules for and reports success.
+
+    top-level resources: 1
+      Microsoft.Resources/deployments
+        nested inside: 9  (including Microsoft.KeyVault/vaults)
+
+  A gate wired this way passes every Bicep module ever written, including
+  one with public network access wide open. It is the Azure-shaped version
+  of the same false negative the gitleaks version drift caused in lab 07:
+  a green result that means "nothing was examined".
+
+RESULT 2, SCANNING THE FLATTENED TEMPLATE
+
+  Lifted the 9 nested resources to the top level and rescanned:
+
+    Passed checks: 0, Failed checks: 5
+      CKV_AZURE_189  disables public network access
+      CKV_AZURE_109  firewall rules settings
+      CKV_AZURE_110  enables purge protection
+      CKV_AZURE_111  enables soft delete
+      CKV_AZURE_42   key vault is recoverable
+
+  Every one of those is a FALSE POSITIVE. The Bicep sets all of them
+  correctly. The compiled resource holds ARM expressions, not literals:
+
+    enableSoftDelete       = "[parameters('enableSoftDelete')]"
+    enablePurgeProtection  = "[if(parameters('enablePurgeProtection'), ...)]"
+    publicNetworkAccess    = "[if(not(empty(parameters('publicNetworkAccess'))), ...)]"
+
+  Checkov compares against a literal true, sees a string beginning with
+  "[parameters(", and fails the rule. The resource is correctly configured
+  and the scanner cannot tell.
+
+THE FINDING
+
+  Checkov's ARM framework cannot meaningfully evaluate AVM-based Bicep.
+  Scan the module output and it sees nothing. Flatten it and it sees
+  everything as broken. Neither number is a signal, and both are the kind
+  of number that ends up in a compliance report.
+
+  This matters beyond this lab. Lab 07's gate runs checkov, and if that
+  gate is ever pointed at Azure Bicep it will return a confident green on
+  unreviewed infrastructure.
+
+WHAT THE RIGHT TOOL LOOKS LIKE
+
+  The scanner has to expand the template first, resolving parameters and
+  ARM functions, and only then evaluate rules. PSRule for Azure does
+  exactly that, which is why Microsoft ships it as the Bicep and AVM story
+  rather than pointing at a generic IaC scanner. Verifying that here is the
+  obvious next step and it also needs no subscription.
+
+  Until then the honest status for this lab: the Bicep compiles and the
+  module contract is verified, the policy JSON is unit tested, and the
+  deny path is unproven because that genuinely requires Azure.
+
+======================================================================
+FOLLOW-UP: PSRULE VERIFIED, AND IT FOUND SOMETHING REAL
+Date: 2026-08-12
+
+  Installed PSRule.Rules.Azure 1.47.0 and pointed it at the same Bicep. It
+  needs AZURE_BICEP_FILE_EXPANSION and the bicep binary on PATH; without
+  those it reports "no matching rules were found", which reads like a pass
+  and is not one. That config is now committed as ps-rule.yaml.
+
+  First run:  34 pass, 2 fail
+  After fix:  36 pass, 0 fail
+
+  It resolved the vault name to lab10kv5f3e65afb63bb, which means it
+  evaluated uniqueString(resourceGroup().id) rather than choking on the
+  expression. That is the difference from checkov, demonstrated rather than
+  asserted.
+
+  The two failures:
+
+    Azure.KeyVault.Logs
+      "Minimum one diagnostic setting should have (AuditEvent) configured
+       or category group (audit, allLogs) configured."
+
+      A genuine gap, and the thematically important one. The vault was
+      hardened against access and kept no record of who accessed it. For a
+      PAM lab that is the whole subject. It is the same hole CloudTrail data
+      events cover in lab 05: a vault nobody can reach is only half a
+      control, the other half is knowing who reached it.
+
+      Fixed by wiring diagnosticSettings to the 'audit' category group,
+      which carries AuditEvent. The workspace id is now a required parameter
+      with no default, because making it optional is how the gap got there.
+
+    Azure.Resource.UseTags
+      Untagged resource. Minor, fixed with standard lab tags.
+
+  Neither was visible to checkov, in either scanning mode. Checkov's 5
+  "failures" were all false positives about settings that were already
+  correct, while the one setting that was genuinely missing, audit logging,
+  appeared in neither the zero-check run nor the flattened run.
+
+  A scanner that reports the wrong five and misses the real one is worse
+  than no scanner, because it produces a report someone will believe.

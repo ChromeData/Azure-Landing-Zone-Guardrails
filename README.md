@@ -9,7 +9,7 @@
 | **Domains** | Azure, CyberArk/Idira (identity governance) |
 | **Built on** | [Azure/azure-policy](https://github.com/Azure/azure-policy) + [Community-Policy](https://github.com/Azure/Community-Policy), [Azure Verified Modules](https://github.com/Azure/Azure-Verified-Modules) |
 | **Cost** | ~$1. **Runtime** ~4 hours |
-| **Status** | Built and verified. Policies tested (15 passing, output in findings/). Not yet assigned |
+| **Status** | Bicep verified offline with PSRule (36 pass, 0 fail) after it caught a missing Key Vault audit setting. Policy deny path still needs a real subscription |
 
 ## Situation
 
