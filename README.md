@@ -1,75 +1,41 @@
-# Lab 10 — Azure Landing-Zone Privileged-Access Guardrails
+# Lab 10: Azure Landing Zone Privileged Access Guardrails
 
 [![tests](https://github.com/ChromeData/Azure-Landing-Zone-Guardrails/actions/workflows/tests.yml/badge.svg)](https://github.com/ChromeData/Azure-Landing-Zone-Guardrails/actions/workflows/tests.yml)
 
-**Rules that physically block the two most common Azure privilege mistakes:
-standing Owner assignments, and Key Vaults that can be purged. Prevention at
-subscription scope, not a report after the fact.**
+**Rules that physically block the two most common Azure privilege mistakes: standing Owner assignments, and Key Vaults that can be wiped. Prevention at subscription scope, not a report after the fact.**
 
 | | |
 |---|---|
-| **Domains** | Azure · CyberArk/Idira (identity governance) |
-| **Built on** | [Azure/azure-policy](https://github.com/Azure/azure-policy) + [Community-Policy](https://github.com/Azure/Community-Policy) (MIT) · [Azure Verified Modules](https://github.com/Azure/Azure-Verified-Modules) (MIT) |
-| **Cost** | ~$1 · **Runtime** ~4 hours |
-| **Status** | 🟡 Built, policies tested, not yet assigned |
+| **Domains** | Azure, CyberArk/Idira (identity governance) |
+| **Built on** | [Azure/azure-policy](https://github.com/Azure/azure-policy) + [Community-Policy](https://github.com/Azure/Community-Policy), [Azure Verified Modules](https://github.com/Azure/Azure-Verified-Modules) |
+| **Cost** | ~$1. **Runtime** ~4 hours |
+| **Status** | Built, policies tested, not yet assigned |
 
----
+## Situation
 
-## The point
+PAM in Azure is mostly policy. The difference between a governed subscription and an open one is whether standing privileged assignments are prevented, not just spotted.
 
-PAM in Azure is mostly policy: the difference between a governed subscription and
-an open one is whether standing privileged assignments are *prevented*, not just
-detected. These guardrails deny the bad thing at deploy time, so it never exists
-to be found.
+## Task
 
-## The two guardrails
+Write guardrails that deny the bad thing at deploy time, so it never exists to be found.
 
-**Deny direct Owner assignments.** Standing Owner is the single most common Azure
-privileged-access finding. The policy blocks direct Owner role assignments so
-elevation has to go through PIM (time-boxed, approved, audited) instead. This is
-the Azure expression of "no standing privilege."
+## Action
 
-**Require Key Vault soft-delete + purge protection.** A vault that can be purged
-is a vault whose secrets can be destroyed to cover tracks — directly a PAM
-concern. The policy denies any vault missing *either* control.
+Two guardrails. The first denies direct Owner assignments, so elevation has to go through PIM (time boxed, approved, audited) instead. Standing Owner is the single most common Azure privileged access finding. The second denies any Key Vault missing soft delete or purge protection, because a vault that can be wiped is a vault whose secrets can be destroyed to cover tracks.
 
-Both ship with the effect as a **parameter** defaulting to `Deny`, so you can roll
-them out in `Audit` first and flip to `Deny` once you've seen what they'd catch —
-the standard safe-rollout pattern for org-wide policy.
+Both ship with the effect as a parameter defaulting to Deny, so you can roll them out in Audit first, see what they would catch, then flip to Deny. Standard safe rollout.
 
-## The guardrails are tested
+## Result
 
-A policy with a malformed rule or the wrong role GUID deploys fine and protects
-*nothing* — it fails silent, the worst kind. **15 offline tests**
-([`tests/test_policies.py`](./tests/test_policies.py)) check every definition:
+A policy with a bad rule or the wrong role ID deploys fine and protects nothing, the worst kind of failure. 15 offline tests ([tests/test_policies.py](./tests/test_policies.py)) check every definition: valid JSON, well formed rule, parameterised effect that defaults to Deny, the Owner deny policy references the real Owner role ID, and the Key Vault policy denies a vault missing either control. CI runs those tests and compiles the Bicep.
 
-- valid JSON, well-formed `if`/`then` rule
-- effect is parameterised, defaults to `Deny`, and only uses real Azure effects
-- the Owner-deny policy references the **actual** Owner role GUID
-  (`8e3af657-…`) — the check that catches the silent-failure bug
-- the Key Vault policy uses `anyOf`, so a vault missing *either* control is denied
+[bicep/keyvault.bicep](./bicep/keyvault.bicep) deploys a correctly hardened Key Vault through the Azure Verified Module. It proves the guardrail passes a resource that is actually compliant, not just that it blocks bad ones.
 
-```bash
-python -m pytest tests/ -v
-```
+## What I did not build
 
-CI runs the policy tests and compiles the Bicep on every push.
+The policy schema and modules are Microsoft's. The two guardrails, the compliant example, and the tests are mine.
 
-## The compliant example
-
-[`bicep/keyvault.bicep`](./bicep/keyvault.bicep) deploys a correctly-hardened Key
-Vault via the Azure Verified Module — soft-delete, purge protection, no public
-access. It's the mirror image of the deny path: proof the guardrail *passes* a
-resource that's actually compliant, not just that it blocks bad ones.
-
-## What I didn't build
-
-The policy schema and AVM modules are Microsoft's. The two guardrail definitions,
-the compliant example, and the tests are mine.
-
----
-
-## Running it
+## Run it
 
 ```bash
 python -m pytest tests/ -v                        # validate the guardrails
@@ -77,7 +43,7 @@ az deployment sub create ...                      # assign policies at scope
 az deployment group create -f bicep/keyvault.bicep # deploy the compliant vault
 ```
 
-Needs Python 3, and the Azure CLI + a subscription for the deploy steps.
+Needs Python 3, and the Azure CLI plus a subscription for the deploy steps.
 
 ## Findings
 
@@ -85,5 +51,4 @@ Needs Python 3, and the Azure CLI + a subscription for the deploy steps.
 
 ## License
 
-Lab code: MIT ([LICENSE](./LICENSE)). Azure policy samples and AVM stay MIT,
-credited above.
+Lab code: MIT ([LICENSE](./LICENSE)). Azure samples and modules stay MIT, credited above.
