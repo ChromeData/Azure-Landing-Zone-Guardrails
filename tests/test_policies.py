@@ -1,7 +1,7 @@
 """Structural validation of the Azure Policy definitions.
 
 These policies are the guardrails. A policy with a malformed rule, an invalid
-effect, or the wrong role GUID doesn't fail loudly at deploy — it deploys and
+effect, or the wrong role GUID doesn't fail loudly at deploy, it deploys and
 quietly protects nothing. So each definition is checked here: shape, effect
 parameter, and that the Owner-deny policy targets the real Owner role GUID.
 
@@ -65,7 +65,7 @@ class TestOwnerDenyPolicy:
     def test_targets_the_real_owner_role_guid(self):
         text = self.path.read_text()
         assert OWNER_ROLE_ID in text, (
-            "Owner-deny policy does not reference the real Owner role GUID — "
+            "Owner-deny policy does not reference the real Owner role GUID, "
             "it would deploy and block nothing."
         )
 

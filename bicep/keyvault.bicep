@@ -16,7 +16,7 @@ module vault 'br/public:avm/res/key-vault/vault:0.9.0' = {
     enableSoftDelete: true          // required by the guardrail
     enablePurgeProtection: true     // required by the guardrail
     publicNetworkAccess: 'Disabled' // required by the guardrail
-    enableRbacAuthorization: true   // RBAC over access policies — the modern default
+    enableRbacAuthorization: true   // RBAC over access policies, the modern default
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'
