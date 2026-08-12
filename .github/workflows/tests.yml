@@ -65,7 +65,21 @@ jobs:
         uses: microsoft/ps-rule@v2.9.0
         with:
           modules: PSRule.Rules.Azure
-          inputPath: bicep/
+          # The .bicepparam, not the bicep/ directory.
+          #
+          # logAnalyticsWorkspaceId is required with no default, deliberately,
+          # because making it optional is how the missing audit setting got in.
+          # The consequence is that keyvault.bicep cannot be expanded as a
+          # standalone target: PSRule reports "The parameter named
+          # 'logAnalyticsWorkspaceId' was not set or a defaultValue was
+          # defined" and fails the run, even though the .bicepparam target in
+          # the same directory passed 36 rules cleanly.
+          #
+          # PSRule still reads keyvault.bicep through the `using` statement, so
+          # the template is fully analysed. Excluding the .bicep via
+          # input.pathIgnore instead was tried and processed zero rules, which
+          # would have been a green job that checked nothing.
+          inputPath: bicep/keyvault.bicepparam
           option: ps-rule.yaml
           outputFormat: Markdown
           outputPath: psrule-results.md

@@ -9,7 +9,7 @@ help: ## Show this help
 scan: ## Offline security scan of the Bicep (no Azure subscription needed)
 	@# PSRule expands the template before evaluating, which is why it can read
 	@# AVM modules. checkov cannot. See findings/bicep-scan-trap.txt.
-	pwsh -c "Install-Module PSRule.Rules.Azure -Scope CurrentUser -Force -SkipPublisherCheck; 	  Invoke-PSRule -InputPath ./bicep/ -Module PSRule.Rules.Azure -Option ./ps-rule.yaml -Outcome Fail"
+	pwsh -c "Install-Module PSRule.Rules.Azure -Scope CurrentUser -Force -SkipPublisherCheck; 	  Invoke-PSRule -InputPath ./bicep/keyvault.bicepparam -Module PSRule.Rules.Azure -Option ./ps-rule.yaml -Outcome Fail"
 
 policy: ## Create the custom policy definitions
 	az policy definition create --name lab10-deny-owner \
